@@ -1,0 +1,24 @@
+{
+  "id": "course-detail-web",
+  "state": "default",
+  "design": {
+    "url": "https://www.figma.com/design/REPLACE_WITH_FILE?node-id=1-23",
+    "units_per_design_unit": 0.5
+  },
+  "actual": {
+    "type": "web",
+    "url": "http://localhost:3000/course",
+    "viewport": {
+      "width": 360,
+      "height": 640
+    },
+    "dpr": 2,
+    "ready_selector": "[data-page-state='course-ready']"
+  },
+  "mappings": {},
+  "tolerances": {
+    "position": 1,
+    "size": 1,
+    "style": 0.5
+  }
+}

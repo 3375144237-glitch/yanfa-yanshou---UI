@@ -1,0 +1,22 @@
+{
+  "id": "course-detail-native",
+  "state": "default",
+  "design": {
+    "url": "https://www.figma.com/design/REPLACE_WITH_FILE?node-id=1-23",
+    "units_per_design_unit": 0.5
+  },
+  "actual": {
+    "type": "native",
+    "server": "http://127.0.0.1:4723",
+    "session_id": "REPLACE_WITH_EXISTING_SESSION",
+    "platform": "android",
+    "device": "REPLACE_WITH_DEVICE",
+    "runtime": "REPLACE_WITH_OS_AND_DRIVER_VERSION",
+    "viewport": {
+      "width": 360,
+      "height": 640
+    },
+    "tree_units_to_logical": 0.5
+  },
+  "mappings": {}
+}
