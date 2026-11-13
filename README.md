@@ -1,6 +1,6 @@
 # 研发 UI 设计还原与自查
 
-面向 Web/H5 与原生 App 的设计实现流程：研发在写页面前读取 Figma 结构、素材、样式和实现说明，直接按设计约束开发；页面可运行后再核对实际效果。工具可生成 HTML 报告、局部证据、JSON 与 Excel，供残余问题定位和复验。无需把设备截图上传到 Figma。
+面向 iOS、Android、鸿蒙原生 App，也支持 Web/H5。研发在写页面前读取对应平台的 Figma 结构、素材、样式和实现说明，直接按设计约束开发；页面可运行后按平台核对实际效果。工具可生成 HTML 报告、局部证据、JSON 与 Excel，供残余问题定位和复验。无需把设备截图上传到 Figma。
 
 本仓库从只读参考 [codex-UI-acceptance](https://github.com/3375144237-glitch/codex-UI-acceptance) 的 `e6aea0e2151681c4d57a0cc0157a854f3b7a4c39` 迁移基础工具，研发版改动仅在 [yanfa-yanshou---UI](https://github.com/3375144237-glitch/yanfa-yanshou---UI) 维护。
 
@@ -8,7 +8,7 @@
 
 在能访问研发代码、Figma 和运行环境的编码助手中加载本仓库的 [ui-design-review Skill](.agents/skills/ui-design-review/SKILL.md)。开发时可以直接说：
 
-> 按这个 Figma 画板实现课程详情页。先读画板评论和组件/素材/布局约束，再看现有代码与设计 token，直接在代码里实现。页面运行后按设计视口核对，修正剩余差异，最后给我未解决问题汇总。
+> 按 iOS、Android、鸿蒙各自的 Figma 画板实现课程详情页。先读评论、素材、布局和安全区规则，再看现有组件与设计 token，在各端代码中直接实现。页面运行后分别核对目标设备和状态，最后给我仍未解决的问题。
 
 只有检查现有页面、不修改代码时，明确说“只检查”。Skill 会先建立设计实现依据；`check` 是完成后的核对工具，不是开发的起点，也不能替代对图片、阴影、状态和交互的检查。
 
@@ -30,8 +30,9 @@ python3 -m venv .venv
 
 | 入口 | 需要 | 自动采集 | 边界 |
 |---|---|---|---|
+| iOS / Android | 现有 Appium 会话、逻辑视口和元素树单位倍率 | 当前截图、XML 元素树及可用文字/边界 | 需对应驱动；树未暴露的字号、颜色等记未验收 |
+| 鸿蒙 | 兼容现有接口且已验证的驱动，或测试框架导出的统一快照与截图 | 在驱动适配或快照导出后比较 | 工具未内置鸿蒙驱动；不能把 Android 采集结果当鸿蒙结果 |
 | Web/H5 | localhost/测试网址、视口、就绪元素 | Chromium 截图、DOM 可见边界、计算样式 | Shadow DOM、iframe、Canvas 内部、跨平台字体与复杂视觉效果需要另行复核 |
-| 原生 App | 现有 Appium 会话、逻辑视口和元素树单位倍率 | 当前截图、XML 元素树及可用文字/边界 | 字号、颜色等未暴露属性记未验收；Android/iOS 需对应驱动；鸿蒙等需自己的驱动或快照适配器 |
 | 已有测试框架 | 统一快照 JSON、可选截图 | 直接使用标准快照检查 | 采集方负责真实来源、单位与环境信息 |
 
 Web 另需 Node 20+：
@@ -41,7 +42,7 @@ npm ci
 npm run browser:install
 ```
 
-在项目中复制 [Web 配置](examples/web-review.json) 或 [原生配置](examples/native-review.json) 为 `config/页面.local.json`，填入实际 Figma 链接和运行入口。相对路径按配置文件所在目录解析。示例中的链接和会话 ID 必须替换。
+在项目中复制 [原生配置](examples/native-review.json) 或 [Web 配置](examples/web-review.json) 为 `config/页面.local.json`，填入实际 Figma 链接和运行入口。原生示例是 Android Appium；iOS 需核对坐标单位后修改平台字段，鸿蒙优先按[统一快照规范](docs/接入与快照规范.md)接入。相对路径按配置文件所在目录解析。示例中的链接和会话 ID 必须替换。
 
 Figma REST 使用本机环境变量 `FIGMA_TOKEN`，需要文件内容和评论读取权限。也支持由现有 Figma MCP 导出统一快照，不依赖某个人电脑里的私有脚本。令牌、浏览器 storage state、设备会话和产物不提交 Git。
 
