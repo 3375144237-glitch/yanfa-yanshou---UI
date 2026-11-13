@@ -1,10 +1,18 @@
-# 研发 UI 还原自查
+# 研发 UI 设计还原与自查
 
-面向 Web/H5 与原生 App 的研发自查工具。输入 Figma 画板和运行页面，生成可浏览的 HTML 报告、局部证据、JSON 与 Excel；改完用同一基线复验。研发无需把设备截图上传到 Figma。
+面向 Web/H5 与原生 App 的设计实现流程：研发在写页面前读取 Figma 结构、素材、样式和实现说明，直接按设计约束开发；页面可运行后再核对实际效果。工具可生成 HTML 报告、局部证据、JSON 与 Excel，供残余问题定位和复验。无需把设备截图上传到 Figma。
 
 本仓库从只读参考 [codex-UI-acceptance](https://github.com/3375144237-glitch/codex-UI-acceptance) 的 `e6aea0e2151681c4d57a0cc0157a854f3b7a4c39` 迁移基础工具，研发版改动仅在 [yanfa-yanshou---UI](https://github.com/3375144237-glitch/yanfa-yanshou---UI) 维护。
 
-## 先体验报告
+## 研发怎么使用
+
+在能访问研发代码、Figma 和运行环境的编码助手中加载本仓库的 [ui-design-review Skill](.agents/skills/ui-design-review/SKILL.md)。开发时可以直接说：
+
+> 按这个 Figma 画板实现课程详情页。先读画板评论和组件/素材/布局约束，再看现有代码与设计 token，直接在代码里实现。页面运行后按设计视口核对，修正剩余差异，最后给我未解决问题汇总。
+
+只有检查现有页面、不修改代码时，明确说“只检查”。Skill 会先建立设计实现依据；`check` 是完成后的核对工具，不是开发的起点，也不能替代对图片、阴影、状态和交互的检查。
+
+## 体验核对报告
 
 Python 3.9+；建议使用独立虚拟环境。Windows 将 `.venv/bin/python` 换成 `.venv\Scripts\python.exe`。
 
@@ -18,7 +26,7 @@ python3 -m venv .venv
 
 命令打印 HTML 路径，可直接打开。演示是合成页面，包含差异报告与 fixed/ 修复后报告，用于体验功能，不代表真实产品验收。
 
-## 两种运行页面入口
+## 完成后核对的运行入口
 
 | 入口 | 需要 | 自动采集 | 边界 |
 |---|---|---|---|
@@ -44,12 +52,6 @@ Figma REST 使用本机环境变量 `FIGMA_TOKEN`，需要文件内容和评论�
 ```
 
 默认每轮创建独立目录；`--out` 指向不存在的新目录。使用 `--strict`：确认差异退出 1，执行错误退出 2，检查覆盖不足退出 3，否则退出 0。默认检查生成报告后退出 0，调用方仍应阅读报告中的确认程度和覆盖状态。
-
-## 研发怎么使用
-
-在能访问研发代码与运行环境的编码助手中加载本仓库的 [ui-design-review Skill](.agents/skills/ui-design-review/SKILL.md)，例如：
-
-> 对照这个 Figma 链接，检查 localhost 的课程详情页。当前只检查课程卡片。自动生成配置，先帮我识别对应元素，给出设计值、实际值、证据和修复入口。修复后用同一基线复验。
 
 工具先按唯一名称、key 或文字自动配对，输出 suggested-mappings.json；自动配对的差异是候选，助手需结合截图确认。重复组件、找不到的元素保持待确认。稳定 selector / accessibility ID 是可选增强；不要求第一天给所有元素加标识。确认后的映射与检查范围写入项目配置，一次配置后复用。
 
