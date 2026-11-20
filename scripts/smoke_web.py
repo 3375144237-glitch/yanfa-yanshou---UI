@@ -73,6 +73,6 @@ try:
     export(verified,fixed_dir,design_img,fixed_img)
     write_json(destination/"design.snapshot.json",design)
     write_json(destination/"actual.snapshot.json",actual)
-    print(json.dumps({"status":"passed","findings":len(result["findings"]),"resolved":len(verified["retest"]),"report":str(destination/"report.html")}))
+    print(json.dumps({"status":"passed","findings":len(result["findings"]),"resolved":len(verified["retest"]),"review":str(destination/"review.json")}))
 finally:
     server.shutdown();server.server_close();thread.join()

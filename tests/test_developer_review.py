@@ -12,6 +12,8 @@ from unittest.mock import patch
 from PIL import Image
 from openpyxl import load_workbook
 
+from scripts.install_ui_skill import install
+from scripts.yanfa_review import main as review_cli
 from ui_acceptance.common import ReviewError, validate_snapshot
 from ui_acceptance.collect import collect_native, parse_native_tree
 from ui_acceptance.engine import compare
@@ -238,21 +240,79 @@ class FigmaTests(unittest.TestCase):
         self.assertEqual(annotations[0]["node_id"],"4")
 
 
+class InstallationTests(unittest.TestCase):
+    def test_install_is_idempotent_and_preserves_active_project_rules(self):
+        with tempfile.TemporaryDirectory() as folder:
+            project = Path(folder)
+            (project / ".git").mkdir()
+            (project / "AGENTS.md").write_text("Base project rules\n", encoding="utf-8")
+            override = project / "AGENTS.override.md"
+            original = b"Active rules\r\nKeep the existing component library.\r\n"
+            override.write_bytes(original)
+            self.assertEqual(install(project), override.resolve())
+            installed = override.read_bytes()
+            self.assertTrue(installed.endswith(original))
+            self.assertEqual((project / "AGENTS.md").read_text(), "Base project rules\n")
+            skill = project / ".agents/skills/ui-implementation"
+            self.assertTrue((skill / "SKILL.md").is_file())
+            self.assertTrue((skill / "COPY-CLASSIFICATION.md").is_file())
+            self.assertFalse((project / ".agents/skills/ui-acceptance").exists())
+            install(project)
+            self.assertEqual(override.read_bytes(), installed)
+
+    def test_install_checks_conflicts_before_changing_project(self):
+        with tempfile.TemporaryDirectory() as folder:
+            project = Path(folder)
+            (project / ".git").mkdir()
+            agents = project / "AGENTS.md"
+            agents.write_bytes(b"Original rules\n")
+            skill = project / ".agents/skills/ui-implementation"
+            skill.mkdir(parents=True)
+            reference = skill / "COPY-CLASSIFICATION.md"
+            reference.write_bytes(b"Local customization\n")
+            with self.assertRaisesRegex(ValueError, "手动合并"):
+                install(project)
+            self.assertEqual(agents.read_bytes(), b"Original rules\n")
+            self.assertEqual(reference.read_bytes(), b"Local customization\n")
+            self.assertFalse((skill / "SKILL.md").exists())
+
+
 class ReportTests(unittest.TestCase):
-    def test_html_escapes_page_content_excel_does_not_execute_formulas(self):
+    def test_check_cli_outputs_json_and_evidence_without_html_or_excel(self):
+        case, design, actual = snapshots()
+        actual["elements"][0]["bbox"]["x"] += 8
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            image = root / "screen.png"
+            Image.new("RGB", (360, 640), "white").save(image)
+            for name, snapshot in (("design", design), ("actual", actual)):
+                filename = name + ".json"
+                (root / filename).write_text(json.dumps(snapshot), encoding="utf-8")
+                case[name] = {"snapshot": filename, "image": image.name}
+            case["actual"]["type"] = "snapshot"
+            config = root / "case.json"
+            config.write_text(json.dumps(case), encoding="utf-8")
+            output = root / "acceptance"
+            with patch("sys.stdout", new_callable=io.StringIO) as stdout:
+                result = review_cli(["check", "--config", str(config), "--out", str(output), "--strict"])
+            self.assertEqual(result, 1)
+            review = output / "review.json"
+            self.assertEqual(Path(json.loads(stdout.getvalue())["review"]), review.resolve())
+            finding = json.loads(review.read_text(encoding="utf-8"))["findings"][0]
+            self.assertTrue((output / finding["evidence"]).is_file())
+            self.assertFalse(list(output.rglob("*.html")))
+            self.assertFalse(list(output.rglob("*.xlsx")))
+
+    def test_optional_excel_preserves_evidence_and_does_not_execute_formulas(self):
         case,d,a=snapshots()
-        d["elements"][0]["name"]='<script>alert(1)</script>'
         a["elements"][0]["bbox"]["x"]+=8
         r=compare(case,d,a)
         r["findings"][0]["note"]="=HYPERLINK(\"https://example.com\")"
         with tempfile.TemporaryDirectory() as folder:
             p=Path(folder)
             image=p/"image.png";Image.new("RGB",(360,640),"white").save(image)
-            export(r,p,image,image)
-            document=(p/"report.html").read_text()
-            self.assertNotIn("<script>alert(1)</script>",document)
-            self.assertIn("&lt;script&gt;",document)
-            self.assertIn("data:image/png;base64,",document)
+            export(r,p,image,image,xlsx=True)
+            self.assertFalse(list(p.rglob("*.html")))
             self.assertTrue((p/"review.json").exists())
             sheet=load_workbook(p/"issues.xlsx")["问题汇总"]
             self.assertNotEqual(sheet["N2"].data_type,"f")

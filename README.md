@@ -1,32 +1,28 @@
-# 研发 UI 设计还原与自查
+# 按设计开发，完成后验收
 
-面向 iOS、Android、鸿蒙原生 App，也支持 Web/H5。研发在写页面前读取对应平台的 Figma 结构、素材、样式和实现说明，直接按设计约束开发；页面可运行后按平台核对实际效果。工具可生成 HTML 报告、局部证据、JSON 与 Excel，供残余问题定位和复验。无需把设备截图上传到 Figma。
+面向 iOS、Android、鸿蒙原生 App，也支持 Web/H5。先把实现规则装进研发仓库，AI 在写页面前读设计和项目约束，直接按依据实现。页面可运行后，再用独立验收流程核对效果。
 
-本仓库从只读参考 [codex-UI-acceptance](https://github.com/3375144237-glitch/codex-UI-acceptance) 的 `e6aea0e2151681c4d57a0cc0157a854f3b7a4c39` 迁移基础工具，研发版改动仅在 [yanfa-yanshou---UI](https://github.com/3375144237-glitch/yanfa-yanshou---UI) 维护。
+本仓库从只读参考 [codex-UI-acceptance](https://github.com/3375144237-glitch/codex-UI-acceptance) 迁移基础工具，研发版改动仅在本仓库维护。
 
-## 研发怎么使用
+## 开工前：把规则装进研发仓库
 
-在能访问研发代码、Figma 和运行环境的编码助手中加载本仓库的 [ui-design-review Skill](.agents/skills/ui-design-review/SKILL.md)。开发时可以直接说：
-
-> 按 iOS、Android、鸿蒙各自的 Figma 画板实现课程详情页。先读评论、素材、布局和安全区规则，再看现有组件与设计 token，在各端代码中直接实现。页面运行后分别核对目标设备和状态，最后给我仍未解决的问题。
-
-只有检查现有页面、不修改代码时，明确说“只检查”。Skill 会先建立设计实现依据；`check` 是完成后的核对工具，不是开发的起点，也不能替代对图片、阴影、状态和交互的检查。
-
-## 体验核对报告
-
-Python 3.9+；建议使用独立虚拟环境。Windows 将 `.venv/bin/python` 换成 `.venv\Scripts\python.exe`。
+克隆本仓库后，在工具仓库目录运行（只需 Python 3.9+，此步骤不安装采集依赖）：
 
 ```bash
-git clone https://github.com/3375144237-glitch/yanfa-yanshou---UI.git
-cd yanfa-yanshou---UI
-python3 -m venv .venv
-.venv/bin/python -m pip install -r requirements.txt
-.venv/bin/python scripts/yanfa_review.py demo
+python3 scripts/install_ui_skill.py --project "/研发仓库的绝对路径"
 ```
 
-命令打印 HTML 路径，可直接打开。演示是合成页面，包含差异报告与 fixed/ 修复后报告，用于体验功能，不代表真实产品验收。
+命令把 [ui-implementation](.agents/skills/ui-implementation/SKILL.md) 装到研发仓库的 `.agents/skills/`，并在 Codex 当前读取的根规则文件（`AGENTS.md` 或非空的 `AGENTS.override.md`）加入必读入口，保留原有规则。相同内容可重复运行；遇到不同的同名 Skill 或已编辑的安装区块时会停止，提示人工合并。团队将这些项目规则纳入版本管理后，后续任务可以复用。
 
-## 完成后核对的运行入口
+在研发仓库启动新的 Codex 任务，提供 Figma 链接和目标端，例如：
+
+> 按这个 Figma 画板实现 iOS、Android、鸿蒙的课程详情页。先按项目的 UI 实现规则确认各端依据，再开始写代码。
+
+AI 先确定设计节点、约束、资源和对应组件；缺少关键依据时先说明缺口，不猜测数值或替代素材。开发阶段只需完成产品代码与正常构建、运行。
+
+## 完成后：按需验收
+
+页面与目标状态可运行后，在工具仓库启动独立的 Codex 验收任务，使用 [ui-acceptance Skill](.agents/skills/ui-acceptance/SKILL.md)。提供研发仓库路径、Figma 链接、目标端和运行入口，例如“验收这个已完成的页面，分别给出各端结论”。只验收时，助手核对并给出结论，不修改产品代码。工具默认保存 JSON 和截图证据，需要表格时加 `--xlsx`。
 
 | 入口 | 需要 | 自动采集 | 边界 |
 |---|---|---|---|
@@ -35,9 +31,12 @@ python3 -m venv .venv
 | Web/H5 | localhost/测试网址、视口、就绪元素 | Chromium 截图、DOM 可见边界、计算样式 | Shadow DOM、iframe、Canvas 内部、跨平台字体与复杂视觉效果需要另行复核 |
 | 已有测试框架 | 统一快照 JSON、可选截图 | 直接使用标准快照检查 | 采集方负责真实来源、单位与环境信息 |
 
-Web 另需 Node 20+：
+使用采集工具时在工具仓库创建 Python 3.9+ 虚拟环境；Windows 使用 `.venv\Scripts\python.exe`。Web 采集另需 Node 20+。
 
 ```bash
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
+# 使用 Web 采集时执行：
 npm ci
 npm run browser:install
 ```
@@ -48,15 +47,16 @@ Figma REST 使用本机环境变量 `FIGMA_TOKEN`，需要文件内容和评论�
 
 ```bash
 .venv/bin/python scripts/yanfa_review.py check --config config/课程页.local.json
+.venv/bin/python scripts/yanfa_review.py check --config config/课程页.local.json --xlsx
 .venv/bin/python scripts/yanfa_review.py check --config config/课程页.local.json --previous outputs/上一轮/review.json
 .venv/bin/python scripts/yanfa_review.py check --config config/课程页.local.json --previous outputs/上一轮/review.json --only 1:23,1:24
 ```
 
-默认每轮创建独立目录；`--out` 指向不存在的新目录。使用 `--strict`：确认差异退出 1，执行错误退出 2，检查覆盖不足退出 3，否则退出 0。默认检查生成报告后退出 0，调用方仍应阅读报告中的确认程度和覆盖状态。
+默认每轮创建独立目录；`--out` 指向不存在的新目录。使用 `--strict`：确认差异退出 1，执行错误退出 2，检查覆盖不足退出 3，否则退出 0。未启用时，正常完成验收采集即退出 0，调用方仍应阅读结果中的确认程度和覆盖状态。
 
 工具先按唯一名称、key 或文字自动配对，输出 suggested-mappings.json；自动配对的差异是候选，助手需结合截图确认。重复组件、找不到的元素保持待确认。稳定 selector / accessibility ID 是可选增强；不要求第一天给所有元素加标识。确认后的映射与检查范围写入项目配置，一次配置后复用。
 
-每条问题有稳定 ID、设计/实际值、差值、运行定位、设计链接、局部对比与可复制修复说明。HTML 可筛选和搜索；Excel 用于交付，JSON 是机器复验依据。源码提示必须由助手在研发仓库中核实，采集器不会猜代码文件和行号。
+每条差异保留稳定 ID、设计值、实际值、差值、运行定位、设计链接和有条件生成的局部证据。JSON 是复验依据。源码提示必须由助手在研发仓库中核实。
 
 ## 判定与复验
 

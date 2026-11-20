@@ -2,7 +2,7 @@
 
 - 本仓库是研发 UI 自查版本，旧仓库 codex-UI-acceptance 仅只读参考。禁止修改旧仓库、它的分支、remote 或配置。
 - 所有新增代码、文档、示例和测试放本仓库；输出在 outputs/，临时内容在 work/ 或 .cache/。创建新文件前重读本仓库《问题与报错日志.md》。
-- 研发入口为 scripts/yanfa_review.py；scripts/ui_review.py 是历史双图兼容入口，不把旧的 720px、95%重合度、上传 Figma、固定六列等规则引入新流程。
+- 开发前用 scripts/install_ui_skill.py 将 ui-implementation 装进研发仓库；完成后的验收入口是 ui-acceptance 和 scripts/yanfa_review.py。新流程不提供问题网页或 demo；scripts/ui_review.py 仅为历史双图兼容入口。
 - Skill 优先服务 iOS、Android、鸿蒙原生页面：实现前逐端读取设计与系统约束，开发时直接落地，完成后分别验证。鸿蒙当前依赖已验证的外部驱动或统一快照，不能宣称内置驱动支持。
 - Figma 读取为默认。只有用户另行要求时才写 Figma 或在线协作表。
 - 自动配对保留候选状态。代码位置需要真实源码支持；原生未暴露属性、未采集区域、未知设计约束保持未验收。
